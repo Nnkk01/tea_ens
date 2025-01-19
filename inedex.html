@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple ENS on Tea Assam</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+</head>
+<body>
+  <h1>Simple ENS - Tea Assam</h1>
+  <div>
+    <h3>Register Name</h3>
+    <input id="name" placeholder="Name" />
+    <input id="ipfs" placeholder="IPFS Hash" />
+    <button onclick="registerName()">Register</button>
+  </div>
+  <div>
+    <h3>Get Name Details</h3>
+    <input id="queryName" placeholder="Name" />
+    <button onclick="getNameDetails()">Get Details</button>
+    <p id="details"></p>
+  </div>
+  <script>
+    // Налаштування RPC для Tea Assam
+    const rpcUrl = "https://assam-rpc.tea.xyz";
+    const chainId = 93384;
+    const contractAddress = "YOUR_CONTRACT_ADDRESS"; // Змініть на вашу адресу контракту
+    const contractABI = [
+      "function register(string name, string ipfsHash) external",
+      "function getOwner(string name) view returns (address)",
+      "function getIpfsHash(string name) view returns (string)"
+    ];
+
+    // Підключення до мережі Tea Assam
+    const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+    async function registerName() {
+      const name = document.getElementById("name").value;
+      const ipfs = document.getElementById("ipfs").value;
+
+      try {
+        const tx = await contract.register(name, ipfs);
+        await tx.wait();
+        alert("Name registered successfully!");
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    async function getNameDetails() {
+      const name = document.getElementById("queryName").value;
+
+      try {
+        const owner = await contract.getOwner(name);
+        const ipfsHash = await contract.getIpfsHash(name);
+        document.getElementById("details").innerText = `Owner: ${owner}, IPFS: ${ipfsHash}`;
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+
+    // Автоматичне підключення Metamask до мережі Tea Assam
+    async function switchToTeaAssam() {
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: "0x16C98", // 93384 в 16-річній системі
+              chainName: "Tea Assam",
+              rpcUrls: [rpcUrl],
+              nativeCurrency: {
+                name: "$TEA",
+                symbol: "TEA",
+                decimals: 18,
+              },
+              blockExplorerUrls: [] // Якщо є експлорер, додайте сюди
+            },
+          ],
+        });
+        alert("Switched to Tea Assam!");
+      } catch (err) {
+        alert("Error switching to Tea Assam: " + err.message);
+      }
+    }
+
+    // Запускаємо автоматичний перемикач при завантаженні сторінки
+    window.onload = switchToTeaAssam;
+  </script>
+</body>
+</html>
