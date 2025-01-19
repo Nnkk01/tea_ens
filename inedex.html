@@ -3,91 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple ENS on Tea Assam</title>
+  <title>Simple ENS - Tea Assam</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 </head>
 <body>
-  <h1>Simple ENS - Tea Assam</h1>
+  <h1>Simple ENS on Tea Assam</h1>
+
   <div>
-    <h3>Register Name</h3>
-    <input id="name" placeholder="Name" />
-    <input id="ipfs" placeholder="IPFS Hash" />
-    <button onclick="registerName()">Register</button>
+    <h3>Register a Domain</h3>
+    <input id="domainName" placeholder="Enter domain name" />
+    <input id="ipfsHash" placeholder="Enter IPFS hash" />
+    <button onclick="registerDomain()">Register</button>
   </div>
+
   <div>
-    <h3>Get Name Details</h3>
-    <input id="queryName" placeholder="Name" />
-    <button onclick="getNameDetails()">Get Details</button>
+    <h3>Get Domain Details</h3>
+    <input id="queryDomain" placeholder="Enter domain name" />
+    <button onclick="getDomainDetails()">Get Details</button>
     <p id="details"></p>
   </div>
+
   <script>
-    // Налаштування RPC для Tea Assam
     const rpcUrl = "https://assam-rpc.tea.xyz";
-    const chainId = 93384;
-    const contractAddress = "YOUR_CONTRACT_ADDRESS"; // Змініть на вашу адресу контракту
+    const contractAddress = "0x2d36a378ebfdebf965c908832fb34237a678367d"; // Замість цього вставте адресу контракту
     const contractABI = [
-      "function register(string name, string ipfsHash) external",
+      "function register(string name, string ipfsHash) external payable",
       "function getOwner(string name) view returns (address)",
       "function getIpfsHash(string name) view returns (string)"
     ];
+    const price = ethers.utils.parseEther("5"); // 5 $TEA
 
-    // Підключення до мережі Tea Assam
     const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    let signer;
+    let contract;
 
-    async function registerName() {
-      const name = document.getElementById("name").value;
-      const ipfs = document.getElementById("ipfs").value;
+    async function connectWallet() {
+      if (typeof window.ethereum !== "undefined") {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const userAddress = accounts[0];
+        signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+        alert(`Connected to wallet: ${userAddress}`);
+      } else {
+        alert("Please install MetaMask!");
+      }
+    }
+
+    async function registerDomain() {
+      const domainName = document.getElementById("domainName").value;
+      const ipfsHash = document.getElementById("ipfsHash").value;
+
+      if (!domainName || !ipfsHash) {
+        alert("Please enter a domain name and IPFS hash!");
+        return;
+      }
 
       try {
-        const tx = await contract.register(name, ipfs);
+        const tx = await contract.register(domainName, ipfsHash, { value: price });
         await tx.wait();
-        alert("Name registered successfully!");
+        alert(`Domain ${domainName} registered successfully!`);
       } catch (err) {
         alert("Error: " + err.message);
       }
     }
 
-    async function getNameDetails() {
-      const name = document.getElementById("queryName").value;
+    async function getDomainDetails() {
+      const queryDomain = document.getElementById("queryDomain").value;
+
+      if (!queryDomain) {
+        alert("Please enter a domain name!");
+        return;
+      }
 
       try {
-        const owner = await contract.getOwner(name);
-        const ipfsHash = await contract.getIpfsHash(name);
-        document.getElementById("details").innerText = `Owner: ${owner}, IPFS: ${ipfsHash}`;
+        const owner = await contract.getOwner(queryDomain);
+        const ipfsHash = await contract.getIpfsHash(queryDomain);
+        document.getElementById("details").innerText = `Owner: ${owner}, IPFS Hash: ${ipfsHash}`;
       } catch (err) {
         alert("Error: " + err.message);
       }
     }
 
-    // Автоматичне підключення Metamask до мережі Tea Assam
-    async function switchToTeaAssam() {
-      try {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [
-            {
-              chainId: "0x16C98", // 93384 в 16-річній системі
-              chainName: "Tea Assam",
-              rpcUrls: [rpcUrl],
-              nativeCurrency: {
-                name: "$TEA",
-                symbol: "TEA",
-                decimals: 18,
-              },
-              blockExplorerUrls: [] // Якщо є експлорер, додайте сюди
-            },
-          ],
-        });
-        alert("Switched to Tea Assam!");
-      } catch (err) {
-        alert("Error switching to Tea Assam: " + err.message);
-      }
-    }
-
-    // Запускаємо автоматичний перемикач при завантаженні сторінки
-    window.onload = switchToTeaAssam;
+    // Автоматичне підключення Metamask
+    window.onload = connectWallet;
   </script>
 </body>
 </html>
+
