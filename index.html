@@ -9,23 +9,27 @@
 <body>
   <h1>Simple ENS on Tea Assam</h1>
 
+  <!-- Кнопка підключення Metamask -->
+  <button id="connectButton" onclick="connectWallet()">Connect Wallet</button>
+  <p id="walletAddress">Not connected</p>
+
   <div>
     <h3>Register a Domain</h3>
-    <input id="domainName" placeholder="Enter domain name" />
+    <input id="domainName" placeholder="Enter domain name (without .tea)" />
     <input id="ipfsHash" placeholder="Enter IPFS hash" />
     <button onclick="registerDomain()">Register</button>
   </div>
 
   <div>
     <h3>Get Domain Details</h3>
-    <input id="queryDomain" placeholder="Enter domain name" />
+    <input id="queryDomain" placeholder="Enter domain name (without .tea)" />
     <button onclick="getDomainDetails()">Get Details</button>
     <p id="details"></p>
   </div>
 
   <script>
     const rpcUrl = "https://assam-rpc.tea.xyz";
-    const contractAddress = "0x2d36a378ebfdebf965c908832fb34237a678367d"; // Замість цього вставте адресу контракту
+    const contractAddress = "0x2d36a378ebfdebf965c908832fb34237a678367d"; // Вкажіть адресу вашого контракту
     const contractABI = [
       "function register(string name, string ipfsHash) external payable",
       "function getOwner(string name) view returns (address)",
@@ -39,11 +43,18 @@
 
     async function connectWallet() {
       if (typeof window.ethereum !== "undefined") {
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        const userAddress = accounts[0];
-        signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
-        contract = new ethers.Contract(contractAddress, contractABI, signer);
-        alert(`Connected to wallet: ${userAddress}`);
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          const userAddress = accounts[0];
+          signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+          contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+          document.getElementById("walletAddress").innerText = `Connected: ${userAddress}`;
+          alert("Wallet connected!");
+        } catch (err) {
+          console.error(err);
+          alert("Connection failed!");
+        }
       } else {
         alert("Please install MetaMask!");
       }
@@ -58,10 +69,12 @@
         return;
       }
 
+      const fullDomain = `${domainName}.tea`; // Додаємо суфікс .tea
+
       try {
-        const tx = await contract.register(domainName, ipfsHash, { value: price });
+        const tx = await contract.register(fullDomain, ipfsHash, { value: price });
         await tx.wait();
-        alert(`Domain ${domainName} registered successfully!`);
+        alert(`Domain ${fullDomain} registered successfully!`);
       } catch (err) {
         alert("Error: " + err.message);
       }
@@ -75,18 +88,16 @@
         return;
       }
 
+      const fullDomain = `${queryDomain}.tea`; // Додаємо суфікс .tea
+
       try {
-        const owner = await contract.getOwner(queryDomain);
-        const ipfsHash = await contract.getIpfsHash(queryDomain);
+        const owner = await contract.getOwner(fullDomain);
+        const ipfsHash = await contract.getIpfsHash(fullDomain);
         document.getElementById("details").innerText = `Owner: ${owner}, IPFS Hash: ${ipfsHash}`;
       } catch (err) {
         alert("Error: " + err.message);
       }
     }
-
-    // Автоматичне підключення Metamask
-    window.onload = connectWallet;
   </script>
 </body>
 </html>
-
